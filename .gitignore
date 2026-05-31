@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+bin/
+obj/
+*.dll
+*.pdb
+logs/
+.DS_Store
+*.exe
+*.suo
+*.user
+*.userosscache
+*.sln.docstats
+.vs/
