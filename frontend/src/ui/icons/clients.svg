@@ -1,0 +1,11 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Пользователь/клиент -->
+  <circle cx="12" cy="8" r="3" fill="#2196F3"/>
+  <path d="M12 13C8.13 13 5 16.13 5 20V21H19V20C19 16.13 15.87 13 12 13Z" fill="#2196F3"/>
+  
+  <!-- Цветок в руках клиента -->
+  <circle cx="16" cy="10" r="1.5" fill="#E91E63"/>
+  <line x1="16" y1="11.5" x2="16" y2="13" stroke="#4CAF50" stroke-width="0.5"/>
+  <circle cx="14" cy="13.5" r="1" fill="#9C27B0"/>
+  <circle cx="18" cy="13.5" r="1" fill="#FF9800"/>
+</svg>

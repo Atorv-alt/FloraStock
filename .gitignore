@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+bin/
+obj/
+*.dll
+*.pdb
+logs/
+.DS_Store
+*.exe
+*.suo
+*.user
+*.userosscache
+*.sln.docstats
+.vs/
+# Локальные секреты (не коммитить!)
+backend/src/API/appsettings.Production.json
+.env
+config.ini
+frontend/config.ini
+*.log
+.pytest_cache/

@@ -1,0 +1,34 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Полка/стеллаж -->
+  <rect x="2" y="8" width="20" height="2" fill="#8D6E63"/>
+  <rect x="2" y="14" width="20" height="2" fill="#8D6E63"/>
+  <rect x="2" y="20" width="20" height="2" fill="#8D6E63"/>
+  
+  <!-- Опоры стеллажа -->
+  <rect x="2" y="8" width="1" height="14" fill="#6D4C41"/>
+  <rect x="21" y="8" width="1" height="14" fill="#6D4C41"/>
+  
+  <!-- Цветы на полках -->
+  <circle cx="6" cy="6" r="1.5" fill="#E91E63"/>
+  <circle cx="12" cy="6" r="1.5" fill="#9C27B0"/>
+  <circle cx="18" cy="6" r="1.5" fill="#FF9800"/>
+  
+  <circle cx="8" cy="12" r="1.5" fill="#4CAF50"/>
+  <circle cx="16" cy="12" r="1.5" fill="#2196F3"/>
+  
+  <circle cx="6" cy="18" r="1.5" fill="#FF5722"/>
+  <circle cx="12" cy="18" r="1.5" fill="#795548"/>
+  <circle cx="18" cy="18" r="1.5" fill="#607D8B"/>
+  
+  <!-- Стебли -->
+  <line x1="6" y1="6" x2="6" y2="8" stroke="#4CAF50" stroke-width="0.5"/>
+  <line x1="12" y1="6" x2="12" y2="8" stroke="#4CAF50" stroke-width="0.5"/>
+  <line x1="18" y1="6" x2="18" y2="8" stroke="#4CAF50" stroke-width="0.5"/>
+  
+  <line x1="8" y1="12" x2="8" y2="14" stroke="#4CAF50" stroke-width="0.5"/>
+  <line x1="16" y1="12" x2="16" y2="14" stroke="#4CAF50" stroke-width="0.5"/>
+  
+  <line x1="6" y1="18" x2="6" y2="20" stroke="#4CAF50" stroke-width="0.5"/>
+  <line x1="12" y1="18" x2="12" y2="20" stroke="#4CAF50" stroke-width="0.5"/>
+  <line x1="18" y1="18" x2="18" y2="20" stroke="#4CAF50" stroke-width="0.5"/>
+</svg>
