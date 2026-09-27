@@ -170,15 +170,32 @@ class DatabaseConnectionDialog(QDialog):
                 "Модуль psycopg2 не установлен.\n"
                 "Установите: pip install psycopg2-binary")
         except OperationalError as e:
-            error_msg = str(e)
+            try:
+                error_msg = str(e)
+            except UnicodeDecodeError:
+                error_msg = ""
             if "does not exist" in error_msg.lower():
-                QMessageBox.warning(self, "База данных не найдена", 
+                QMessageBox.warning(self, "База данных не найдена",
                     f"База данных '{params['dbname']}' не существует.\n\n"
                     "Нажмите 'Создать и подключить' для автоматического создания.")
+            elif "password authentication failed" in error_msg.lower() or "role" in error_msg.lower():
+                QMessageBox.critical(self, "Ошибка",
+                    f"❌ Не удалось подключиться: неверный пользователь или пароль.\n"
+                    f"Проверьте поле «Пользователь» (сейчас: '{params['user']}').\n"
+                    "Обычно это 'postgres'.")
             else:
                 QMessageBox.critical(self, "Ошибка", f"❌ Не удалось подключиться:\n{error_msg}")
+        except UnicodeDecodeError:
+            QMessageBox.critical(self, "Ошибка",
+                f"❌ Не удалось подключиться: сервер вернул сообщение в кодировке Windows-1251.\n"
+                f"Проверьте пользователя и пароль (пользователь: '{params['user']}').\n"
+                "Если вводили 'postores' — исправьте на 'postgres'.")
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"❌ Ошибка:\n{str(e)}")
+            try:
+                detail = str(e)
+            except UnicodeDecodeError:
+                detail = "сервер вернул сообщение в неизвестной кодировке. Проверьте параметры подключения."
+            QMessageBox.critical(self, "Ошибка", f"❌ Ошибка:\n{detail}")
     
     def create_database(self):
         """Создание базы данных"""
@@ -208,12 +225,21 @@ class DatabaseConnectionDialog(QDialog):
                 return True
                 
         except ImportError:
-            QMessageBox.warning(self, "Ошибка", 
+            QMessageBox.warning(self, "Ошибка",
                 "Модуль psycopg2 не установлен.\n"
                 "Установите: pip install psycopg2-binary")
             return False
+        except UnicodeDecodeError:
+            QMessageBox.critical(self, "Ошибка создания",
+                "❌ Не удалось создать базу данных: сервер вернул сообщение в кодировке Windows-1251.\n"
+                "Проверьте пользователя и пароль (обычно пользователь 'postgres').")
+            return False
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка создания", f"❌ Не удалось создать базу данных:\n{str(e)}")
+            try:
+                detail = str(e)
+            except UnicodeDecodeError:
+                detail = "сервер вернул сообщение в неизвестной кодировке. Проверьте параметры подключения."
+            QMessageBox.critical(self, "Ошибка создания", f"❌ Не удалось создать базу данных:\n{detail}")
             return False
     
     def create_and_connect(self):
@@ -272,8 +298,16 @@ class DatabaseConnectionDialog(QDialog):
                 self.accept()
                 
         except ImportError:
-            QMessageBox.warning(self, "Ошибка", 
+            QMessageBox.warning(self, "Ошибка",
                 "Модуль psycopg2 не установлен.\n"
                 "Установите: pip install psycopg2-binary")
+        except UnicodeDecodeError:
+            QMessageBox.critical(self, "Ошибка",
+                "❌ Не удалось создать базу данных: сервер вернул сообщение в кодировке Windows-1251.\n"
+                "Проверьте пользователя и пароль (обычно пользователь 'postgres').")
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"❌ Не удалось создать базу данных:\n{str(e)}")
+            try:
+                detail = str(e)
+            except UnicodeDecodeError:
+                detail = "сервер вернул сообщение в неизвестной кодировке. Проверьте параметры подключения."
+            QMessageBox.critical(self, "Ошибка", f"❌ Не удалось создать базу данных:\n{detail}")

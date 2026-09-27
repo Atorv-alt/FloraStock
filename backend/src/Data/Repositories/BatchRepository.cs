@@ -24,7 +24,7 @@ namespace Data.Repositories
         public async Task<IEnumerable<Batch>> GetBySupplierAsync(int supplierId)
         {
             return await _context.Batch
-                .Where(b => b.SupplierId == supplierId)
+                .Where(b => b.SupplierID == supplierId)
                 .OrderByDescending(b => b.DeliveryDate)
                 .ToListAsync();
         }

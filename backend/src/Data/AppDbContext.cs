@@ -154,27 +154,68 @@ namespace Data
             modelBuilder.Entity<Employee>().HasIndex(e => e.Login).IsUnique();
             modelBuilder.Entity<Client>().HasIndex(e => e.Email).IsUnique();
             modelBuilder.Entity<Category>().HasIndex(e => e.Name).IsUnique();
-            // Диапазоны (дублируют CHECK-ограничения из 06_constraints.sql)
+            // Диапазоны и форматы (полный дубль CHECK-ограничений из 06_constraints.sql,
+            // чтобы БД, созданная через EnsureCreated, соответствовала п.1.3)
             modelBuilder.Entity<Product>().ToTable(t =>
             {
                 t.HasCheckConstraint("chk_product_purchase_price_pos", "\"purchaseprice\" IS NULL OR \"purchaseprice\" > 0");
                 t.HasCheckConstraint("chk_product_retail_price_pos", "\"retailprice\" IS NULL OR \"retailprice\" > 0");
                 t.HasCheckConstraint("chk_product_shelf_life_pos", "\"shelflifedays\" IS NULL OR \"shelflifedays\" > 0");
+                t.HasCheckConstraint("chk_product_color_letters", "\"color\" IS NULL OR \"color\" ~ '^[А-ЯЁA-Za-zа-яё \\-]+$'");
+                t.HasCheckConstraint("chk_product_unit_letters", "\"unit\" IS NULL OR \"unit\" ~ '^[А-ЯЁA-Za-zа-яё \\-]+$'");
             });
             modelBuilder.Entity<Batch>().ToTable(t =>
             {
                 t.HasCheckConstraint("chk_batch_qty_nonneg", "\"quantity\" IS NULL OR \"quantity\" >= 0");
                 t.HasCheckConstraint("chk_batch_cost_price_pos", "\"costprice\" IS NULL OR \"costprice\" > 0");
+                t.HasCheckConstraint("chk_batch_delivery_not_future", "\"deliverydate\" IS NULL OR \"deliverydate\" <= CURRENT_DATE");
+                t.HasCheckConstraint("chk_batch_invoice_format", "\"invoicenumber\" IS NULL OR \"invoicenumber\" ~ '^[А-ЯЁA-Z]{2,5}-[0-9]{3,}/[0-9]{4}$'");
             });
             modelBuilder.Entity<Order>().ToTable(t =>
             {
+                t.HasCheckConstraint("chk_order_total_nonneg", "\"totalamount\" IS NULL OR \"totalamount\" >= 0");
+                t.HasCheckConstraint("chk_order_date_not_future", "\"orderdate\" <= CURRENT_DATE");
                 t.HasCheckConstraint("chk_order_status_allowed",
                     "\"status\" IS NULL OR \"status\" IN ('Новый', 'В обработке', 'Выполнен', 'Доставлен')");
+                t.HasCheckConstraint("chk_order_number_format", "\"ordernumber\" IS NULL OR \"ordernumber\" ~ '^ORD-[0-9]{3,}/[0-9]{4}$'");
+            });
+            modelBuilder.Entity<OrderPosition>().ToTable(t =>
+            {
+                t.HasCheckConstraint("chk_orderposition_unit_price_pos", "\"unitprice\" IS NULL OR \"unitprice\" > 0");
+                t.HasCheckConstraint("chk_orderposition_qty_nonneg", "\"quantity\" >= 0");
+            });
+            modelBuilder.Entity<OrderItem>().ToTable(t =>
+            {
+                t.HasCheckConstraint("chk_orderitem_unit_price_pos", "\"unitprice\" IS NULL OR \"unitprice\" > 0");
+                t.HasCheckConstraint("chk_orderitem_qty_nonneg", "\"quantity\" >= 0");
+            });
+            modelBuilder.Entity<StockPosition>().ToTable(t =>
+            {
+                t.HasCheckConstraint("chk_stock_qty_nonneg", "\"quantity\" >= 0");
+                t.HasCheckConstraint("chk_stock_receipt_not_future", "\"receiptdate\" IS NULL OR \"receiptdate\" <= CURRENT_DATE");
+            });
+            modelBuilder.Entity<Inventory>().ToTable(t =>
+            {
+                t.HasCheckConstraint("chk_inventory_qty_nonneg", "\"quantity\" >= 0");
+                t.HasCheckConstraint("chk_inventory_receipt_not_future", "\"receiptdate\" IS NULL OR \"receiptdate\" <= CURRENT_DATE");
             });
             modelBuilder.Entity<Employee>().ToTable(t =>
             {
                 t.HasCheckConstraint("chk_employee_access_level",
                     "\"accesslevel\" IS NULL OR \"accesslevel\" IN ('admin','florist','seller','purchasing','courier','warehouse')");
+                t.HasCheckConstraint("chk_employee_phone_format", "\"phonenumber\" IS NULL OR \"phonenumber\" ~ '^\\+7[0-9]{10}$'");
+                t.HasCheckConstraint("chk_employee_email_format", "\"email\" IS NULL OR \"email\" ~ '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'");
+                t.HasCheckConstraint("chk_employee_password_not_empty", "\"loginpassword\" IS NULL OR char_length(btrim(\"loginpassword\")) > 0");
+            });
+            modelBuilder.Entity<Client>().ToTable(t =>
+            {
+                t.HasCheckConstraint("chk_client_phone_format", "\"phonenumber\" IS NULL OR \"phonenumber\" ~ '^\\+7[0-9]{10}$'");
+                t.HasCheckConstraint("chk_client_email_format", "\"email\" IS NULL OR \"email\" ~ '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'");
+            });
+            modelBuilder.Entity<Supplier>().ToTable(t =>
+            {
+                t.HasCheckConstraint("chk_supplier_phone_format", "\"phonenumber\" IS NULL OR \"phonenumber\" ~ '^\\+7[0-9]{10}$'");
+                t.HasCheckConstraint("chk_supplier_email_format", "\"email\" IS NULL OR \"email\" ~ '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'");
             });
         }
     }

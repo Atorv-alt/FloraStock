@@ -128,7 +128,7 @@ class OrdersWidget(QWidget):
         
         self.status_filter = QComboBox()
         self.status_filter.setMinimumWidth(120)
-        self.status_filter.addItems(["Все", "Новый", "В обработке", "Готов к выдаче", "Выполнен", "Отменен"])
+        self.status_filter.addItems(["Все", "Новый", "В обработке", "Выполнен", "Доставлен"])
         self.status_filter.currentTextChanged.connect(self.filter_orders)
         filter_layout.addWidget(self.status_filter)
         

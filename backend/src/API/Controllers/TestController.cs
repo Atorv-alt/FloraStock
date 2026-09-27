@@ -18,6 +18,7 @@ namespace API.Controllers
         }
 
         [HttpGet("employees")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> GetEmployees()
         {
             try

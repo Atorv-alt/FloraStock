@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Data;
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Shared.Entities;
@@ -11,15 +13,18 @@ namespace API.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly IProductRepository _productRepository;
+        private readonly AppDbContext _context;
         private readonly ICategoryRepository _categoryRepository;
         private readonly ILogger<ProductsController> _logger;
 
         public ProductsController(
             IProductRepository productRepository,
+            Data.AppDbContext context,
             ICategoryRepository categoryRepository,
             ILogger<ProductsController> logger)
         {
             _productRepository = productRepository;
+            _context = context;
             _categoryRepository = categoryRepository;
             _logger = logger;
         }
@@ -208,6 +213,13 @@ namespace API.Controllers
                     return NotFound(new { message = "Товар не найден" });
                 }
 
+                if (await _context.Inventory.AnyAsync(i => i.ProductID == id)
+                    || await _context.OrderItem.AnyAsync(i => i.ProductID == id)
+                    || await _context.OrderPosition.AnyAsync(p => p.ProductID == id)
+                    || await _context.Order.AnyAsync(o => o.ProductID == id))
+                {
+                    return Conflict(new { message = "Нельзя удалить товар: есть связанные записи на складе и в заказах" });
+                }
                 var result = await _productRepository.DeleteAsync(id);
                 if (!result)
                 {
@@ -215,6 +227,11 @@ namespace API.Controllers
                 }
 
                 return NoContent();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                _logger.LogWarning(dbEx, "Нарушение внешнего ключа при удалении");
+                return Conflict(new { message = "Нельзя удалить товар: есть связанные записи на складе и в заказах" });
             }
             catch (Exception ex)
             {

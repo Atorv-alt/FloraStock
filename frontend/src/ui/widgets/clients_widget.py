@@ -303,7 +303,14 @@ class ClientsWidget(QWidget):
     def edit_client(self, index):
         """Редактировать клиента по индексу таблицы"""
         row = index.row()
-        client_id = int(self.clients_table.item(row, 0).text())
+        _cell = self.clients_table.item(row, 0)
+        try:
+            client_id = int(_cell.text()) if _cell is not None else -1
+        except (TypeError, ValueError):
+            client_id = -1
+        if client_id < 0:
+            QMessageBox.warning(self, "Ошибка", "Не удалось получить ID записи")
+            return
         self.edit_client_by_id(client_id)
     
     def edit_client_by_id(self, client_id):

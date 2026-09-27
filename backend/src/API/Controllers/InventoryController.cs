@@ -157,7 +157,7 @@ namespace API.Controllers
                     ProductId = request.ProductId,
                     BatchId = request.BatchId,
                     Quantity = request.Quantity,
-                    ReceiptDate = request.ReceiptDate?.Date ?? DateTime.Today,
+                    ReceiptDate = NormalizeToUtc(request.ReceiptDate?.Date) ?? DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc),
                     StorageLocation = request.StorageLocation,
                     StorageTemperature = request.StorageTemperature,
                     HumidityLevel = request.HumidityLevel
@@ -202,7 +202,7 @@ namespace API.Controllers
                 existingInventory.ProductId = request.ProductId ?? existingInventory.ProductId;
                 existingInventory.BatchId = request.BatchId ?? existingInventory.BatchId;
                 existingInventory.Quantity = request.Quantity ?? existingInventory.Quantity;
-                existingInventory.ReceiptDate = request.ReceiptDate?.Date ?? existingInventory.ReceiptDate;
+                existingInventory.ReceiptDate = NormalizeToUtc(request.ReceiptDate?.Date) ?? NormalizeToUtc(existingInventory.ReceiptDate);
                 existingInventory.StorageLocation = request.StorageLocation ?? existingInventory.StorageLocation;
                 existingInventory.StorageTemperature = request.StorageTemperature ?? existingInventory.StorageTemperature;
                 existingInventory.HumidityLevel = request.HumidityLevel ?? existingInventory.HumidityLevel;
@@ -325,6 +325,22 @@ namespace API.Controllers
                 _logger.LogError(ex, "Ошибка при получении общего количества товара");
                 return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
             }
+        }
+
+        private static DateTime NormalizeToUtc(DateTime value)
+        {
+            return value.Kind switch
+            {
+                DateTimeKind.Utc => value,
+                DateTimeKind.Local => value.ToUniversalTime(),
+                // Дата без зоны (напр. "2026-09-27" из календаря) — это локальная дата
+                _ => DateTime.SpecifyKind(value, DateTimeKind.Local).ToUniversalTime(),
+            };
+        }
+
+        private static DateTime? NormalizeToUtc(DateTime? value)
+        {
+            return value.HasValue ? NormalizeToUtc(value.Value) : null;
         }
     }
 

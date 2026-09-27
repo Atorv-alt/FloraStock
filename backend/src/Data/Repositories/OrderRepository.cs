@@ -41,7 +41,7 @@ namespace Data.Repositories
         public async Task<IEnumerable<Order>> GetByClientAsync(int clientId)
         {
             return await _context.Order
-                .Where(o => o.ClientId == clientId)
+                .Where(o => o.ClientID == clientId)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }
@@ -49,7 +49,7 @@ namespace Data.Repositories
         public async Task<IEnumerable<Order>> GetByEmployeeAsync(int employeeId)
         {
             return await _context.Order
-                .Where(o => o.EmployeeId == employeeId)
+                .Where(o => o.EmployeeID == employeeId)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }
@@ -152,7 +152,7 @@ namespace Data.Repositories
         public async Task<IEnumerable<OrderItem>> GetOrderItemsAsync(int orderId)
         {
             return await _context.OrderItem
-                .Where(oi => oi.OrderId == orderId)
+                .Where(oi => oi.OrderID == orderId)
                 .ToListAsync();
         }
 
@@ -165,7 +165,7 @@ namespace Data.Repositories
         public async Task<OrderItem?> GetOrderItemAsync(int orderId, int productId)
         {
             return await _context.OrderItem
-                .FirstOrDefaultAsync(oi => oi.OrderId == orderId && oi.ProductId == productId);
+                .FirstOrDefaultAsync(oi => oi.OrderID == orderId && oi.ProductID == productId);
         }
 
         public async Task<OrderItem> CreateOrderItemAsync(OrderItem orderItem)

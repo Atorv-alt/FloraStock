@@ -203,13 +203,16 @@ async Task InitializeDatabaseAsync(string connectionString, WebApplication app)
         {
             await conn.OpenAsync();
             
-            using var cmd = new Npgsql.NpgsqlCommand($"SELECT 1 FROM pg_database WHERE datname = '{dbName}'", conn);
+            using var cmd = new Npgsql.NpgsqlCommand("SELECT 1 FROM pg_database WHERE datname = @db", conn);
+            cmd.Parameters.AddWithValue("@db", dbName ?? "");
             var exists = await cmd.ExecuteScalarAsync();
             dbExists = exists != null;
             
             if (!dbExists)
             {
                 Log.Information("Создание базы данных {DbName}...", dbName);
+                if (!System.Text.RegularExpressions.Regex.IsMatch(dbName ?? "", "^[A-Za-z_][A-Za-z0-9_]*$"))
+                    throw new InvalidOperationException("Недопустимое имя базы данных");
                 using var createCmd = new Npgsql.NpgsqlCommand($"CREATE DATABASE \"{dbName}\"", conn);
                 await createCmd.ExecuteNonQueryAsync();
                 Log.Information("База данных {DbName} создана", dbName);
@@ -337,16 +340,16 @@ async Task InitializeDatabaseAsync(string connectionString, WebApplication app)
                 // Партии
                 var batches = new[]
                 {
-                    new Shared.Entities.Batch { SupplierID = 1, DeliveryDate = DateTime.Parse("2024-01-15").ToUniversalTime(), InvoiceNumber = "РОЗ-001/2024", Quantity = 500, CostPrice = 75000 },
-                    new Shared.Entities.Batch { SupplierID = 2, DeliveryDate = DateTime.Parse("2024-01-20").ToUniversalTime(), InvoiceNumber = "ТЮЛ-002/2024", Quantity = 1000, CostPrice = 50000 },
-                    new Shared.Entities.Batch { SupplierID = 3, DeliveryDate = DateTime.Parse("2024-01-25").ToUniversalTime(), InvoiceNumber = "ЭКВ-003/2024", Quantity = 300, CostPrice = 45000 },
-                    new Shared.Entities.Batch { SupplierID = 4, DeliveryDate = DateTime.Parse("2024-02-01").ToUniversalTime(), InvoiceNumber = "КЕН-004/2024", Quantity = 400, CostPrice = 28000 },
-                    new Shared.Entities.Batch { SupplierID = 5, DeliveryDate = DateTime.Parse("2024-02-05").ToUniversalTime(), InvoiceNumber = "ОРХ-005/2024", Quantity = 50, CostPrice = 25000 },
-                    new Shared.Entities.Batch { SupplierID = 6, DeliveryDate = DateTime.Parse("2024-02-10").ToUniversalTime(), InvoiceNumber = "РОС-006/2024", Quantity = 600, CostPrice = 48000 },
-                    new Shared.Entities.Batch { SupplierID = 7, DeliveryDate = DateTime.Parse("2024-02-15").ToUniversalTime(), InvoiceNumber = "ПИО-007/2024", Quantity = 200, CostPrice = 16000 },
-                    new Shared.Entities.Batch { SupplierID = 8, DeliveryDate = DateTime.Parse("2024-02-20").ToUniversalTime(), InvoiceNumber = "ЛИЛ-008/2024", Quantity = 350, CostPrice = 24500 },
-                    new Shared.Entities.Batch { SupplierID = 9, DeliveryDate = DateTime.Parse("2024-02-25").ToUniversalTime(), InvoiceNumber = "ГЕР-009/2024", Quantity = 450, CostPrice = 29250 },
-                    new Shared.Entities.Batch { SupplierID = 10, DeliveryDate = DateTime.Parse("2024-03-01").ToUniversalTime(), InvoiceNumber = "ЭКЗ-010/2024", Quantity = 150, CostPrice = 22500 }
+                    new Shared.Entities.Batch { SupplierID = 1, DeliveryDate = new DateTime(2024, 01, 15, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "РОЗ-001/2024", Quantity = 500, CostPrice = 75000 },
+                    new Shared.Entities.Batch { SupplierID = 2, DeliveryDate = new DateTime(2024, 01, 20, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "ТЮЛ-002/2024", Quantity = 1000, CostPrice = 50000 },
+                    new Shared.Entities.Batch { SupplierID = 3, DeliveryDate = new DateTime(2024, 01, 25, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "ЭКВ-003/2024", Quantity = 300, CostPrice = 45000 },
+                    new Shared.Entities.Batch { SupplierID = 4, DeliveryDate = new DateTime(2024, 02, 01, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "КЕН-004/2024", Quantity = 400, CostPrice = 28000 },
+                    new Shared.Entities.Batch { SupplierID = 5, DeliveryDate = new DateTime(2024, 02, 05, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "ОРХ-005/2024", Quantity = 50, CostPrice = 25000 },
+                    new Shared.Entities.Batch { SupplierID = 6, DeliveryDate = new DateTime(2024, 02, 10, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "РОС-006/2024", Quantity = 600, CostPrice = 48000 },
+                    new Shared.Entities.Batch { SupplierID = 7, DeliveryDate = new DateTime(2024, 02, 15, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "ПИО-007/2024", Quantity = 200, CostPrice = 16000 },
+                    new Shared.Entities.Batch { SupplierID = 8, DeliveryDate = new DateTime(2024, 02, 20, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "ЛИЛ-008/2024", Quantity = 350, CostPrice = 24500 },
+                    new Shared.Entities.Batch { SupplierID = 9, DeliveryDate = new DateTime(2024, 02, 25, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "ГЕР-009/2024", Quantity = 450, CostPrice = 29250 },
+                    new Shared.Entities.Batch { SupplierID = 10, DeliveryDate = new DateTime(2024, 03, 01, 0, 0, 0, DateTimeKind.Utc), InvoiceNumber = "ЭКЗ-010/2024", Quantity = 150, CostPrice = 22500 }
                 };
                 context.Batch.AddRange(batches);
                 await context.SaveChangesAsync();
@@ -354,16 +357,16 @@ async Task InitializeDatabaseAsync(string connectionString, WebApplication app)
                 // Заказы
                 var orders = new[]
                 {
-                    new Shared.Entities.Order { ClientID = 1, EmployeeID = 1, ProductID = 1, OrderDate = DateTime.Parse("2024-01-20").ToUniversalTime(), Status = "Доставлен", OrderNumber = "ORD-001/2024", TotalAmount = 1500 },
-                    new Shared.Entities.Order { ClientID = 2, EmployeeID = 3, ProductID = 3, OrderDate = DateTime.Parse("2024-01-22").ToUniversalTime(), Status = "Выполнен", OrderNumber = "ORD-002/2024", TotalAmount = 500 },
-                    new Shared.Entities.Order { ClientID = 3, EmployeeID = 1, ProductID = 5, OrderDate = DateTime.Parse("2024-01-25").ToUniversalTime(), Status = "Доставлен", OrderNumber = "ORD-003/2024", TotalAmount = 1120 },
-                    new Shared.Entities.Order { ClientID = 4, EmployeeID = 5, ProductID = 2, OrderDate = DateTime.Parse("2024-01-28").ToUniversalTime(), Status = "В обработке", OrderNumber = "ORD-004/2024", TotalAmount = 1250 },
-                    new Shared.Entities.Order { ClientID = 5, EmployeeID = 3, ProductID = 7, OrderDate = DateTime.Parse("2024-02-01").ToUniversalTime(), Status = "Выполнен", OrderNumber = "ORD-005/2024", TotalAmount = 780 },
-                    new Shared.Entities.Order { ClientID = 6, EmployeeID = 1, ProductID = 4, OrderDate = DateTime.Parse("2024-02-05").ToUniversalTime(), Status = "Доставлен", OrderNumber = "ORD-006/2024", TotalAmount = 720 },
-                    new Shared.Entities.Order { ClientID = 7, EmployeeID = 5, ProductID = 6, OrderDate = DateTime.Parse("2024-02-10").ToUniversalTime(), Status = "В обработке", OrderNumber = "ORD-007/2024", TotalAmount = 960 },
-                    new Shared.Entities.Order { ClientID = 8, EmployeeID = 3, ProductID = 8, OrderDate = DateTime.Parse("2024-02-15").ToUniversalTime(), Status = "Выполнен", OrderNumber = "ORD-008/2024", TotalAmount = 660 },
-                    new Shared.Entities.Order { ClientID = 9, EmployeeID = 1, ProductID = 9, OrderDate = DateTime.Parse("2024-02-20").ToUniversalTime(), Status = "Доставлен", OrderNumber = "ORD-009/2024", TotalAmount = 2400 },
-                    new Shared.Entities.Order { ClientID = 10, EmployeeID = 5, ProductID = 10, OrderDate = DateTime.Parse("2024-02-25").ToUniversalTime(), Status = "В обработке", OrderNumber = "ORD-010/2024", TotalAmount = 2000 }
+                    new Shared.Entities.Order { ClientID = 1, EmployeeID = 1, ProductID = 1, OrderDate = new DateTime(2024, 01, 20, 0, 0, 0, DateTimeKind.Utc), Status = "Доставлен", OrderNumber = "ORD-001/2024", TotalAmount = 1500 },
+                    new Shared.Entities.Order { ClientID = 2, EmployeeID = 3, ProductID = 3, OrderDate = new DateTime(2024, 01, 22, 0, 0, 0, DateTimeKind.Utc), Status = "Выполнен", OrderNumber = "ORD-002/2024", TotalAmount = 500 },
+                    new Shared.Entities.Order { ClientID = 3, EmployeeID = 1, ProductID = 5, OrderDate = new DateTime(2024, 01, 25, 0, 0, 0, DateTimeKind.Utc), Status = "Доставлен", OrderNumber = "ORD-003/2024", TotalAmount = 1120 },
+                    new Shared.Entities.Order { ClientID = 4, EmployeeID = 5, ProductID = 2, OrderDate = new DateTime(2024, 01, 28, 0, 0, 0, DateTimeKind.Utc), Status = "В обработке", OrderNumber = "ORD-004/2024", TotalAmount = 1250 },
+                    new Shared.Entities.Order { ClientID = 5, EmployeeID = 3, ProductID = 7, OrderDate = new DateTime(2024, 02, 01, 0, 0, 0, DateTimeKind.Utc), Status = "Выполнен", OrderNumber = "ORD-005/2024", TotalAmount = 780 },
+                    new Shared.Entities.Order { ClientID = 6, EmployeeID = 1, ProductID = 4, OrderDate = new DateTime(2024, 02, 05, 0, 0, 0, DateTimeKind.Utc), Status = "Доставлен", OrderNumber = "ORD-006/2024", TotalAmount = 720 },
+                    new Shared.Entities.Order { ClientID = 7, EmployeeID = 5, ProductID = 6, OrderDate = new DateTime(2024, 02, 10, 0, 0, 0, DateTimeKind.Utc), Status = "В обработке", OrderNumber = "ORD-007/2024", TotalAmount = 960 },
+                    new Shared.Entities.Order { ClientID = 8, EmployeeID = 3, ProductID = 8, OrderDate = new DateTime(2024, 02, 15, 0, 0, 0, DateTimeKind.Utc), Status = "Выполнен", OrderNumber = "ORD-008/2024", TotalAmount = 660 },
+                    new Shared.Entities.Order { ClientID = 9, EmployeeID = 1, ProductID = 9, OrderDate = new DateTime(2024, 02, 20, 0, 0, 0, DateTimeKind.Utc), Status = "Доставлен", OrderNumber = "ORD-009/2024", TotalAmount = 2400 },
+                    new Shared.Entities.Order { ClientID = 10, EmployeeID = 5, ProductID = 10, OrderDate = new DateTime(2024, 02, 25, 0, 0, 0, DateTimeKind.Utc), Status = "В обработке", OrderNumber = "ORD-010/2024", TotalAmount = 2000 }
                 };
                 context.Order.AddRange(orders);
                 await context.SaveChangesAsync();
@@ -388,16 +391,16 @@ async Task InitializeDatabaseAsync(string connectionString, WebApplication app)
                 // Складские позиции
                 var inventory = new[]
                 {
-                    new Shared.Entities.Inventory { ProductID = 1, BatchID = 1, Quantity = 100, ReceiptDate = DateTime.Parse("2024-01-15").ToUniversalTime(), StorageLocation = "Холодильник А1", StorageTemperature = "+2°C", HumidityLevel = "85%" },
-                    new Shared.Entities.Inventory { ProductID = 2, BatchID = 1, Quantity = 80, ReceiptDate = DateTime.Parse("2024-01-15").ToUniversalTime(), StorageLocation = "Холодильник А2", StorageTemperature = "+2°C", HumidityLevel = "85%" },
-                    new Shared.Entities.Inventory { ProductID = 3, BatchID = 2, Quantity = 200, ReceiptDate = DateTime.Parse("2024-01-20").ToUniversalTime(), StorageLocation = "Холодильник Б1", StorageTemperature = "+4°C", HumidityLevel = "80%" },
-                    new Shared.Entities.Inventory { ProductID = 4, BatchID = 2, Quantity = 150, ReceiptDate = DateTime.Parse("2024-01-20").ToUniversalTime(), StorageLocation = "Холодильник Б2", StorageTemperature = "+4°C", HumidityLevel = "80%" },
-                    new Shared.Entities.Inventory { ProductID = 5, BatchID = 4, Quantity = 120, ReceiptDate = DateTime.Parse("2024-02-01").ToUniversalTime(), StorageLocation = "Холодильник В1", StorageTemperature = "+3°C", HumidityLevel = "75%" },
-                    new Shared.Entities.Inventory { ProductID = 6, BatchID = 6, Quantity = 100, ReceiptDate = DateTime.Parse("2024-02-10").ToUniversalTime(), StorageLocation = "Холодильник В2", StorageTemperature = "+3°C", HumidityLevel = "75%" },
-                    new Shared.Entities.Inventory { ProductID = 7, BatchID = 9, Quantity = 90, ReceiptDate = DateTime.Parse("2024-02-25").ToUniversalTime(), StorageLocation = "Холодильник Г1", StorageTemperature = "+5°C", HumidityLevel = "70%" },
-                    new Shared.Entities.Inventory { ProductID = 8, BatchID = 9, Quantity = 80, ReceiptDate = DateTime.Parse("2024-02-25").ToUniversalTime(), StorageLocation = "Холодильник Г2", StorageTemperature = "+5°C", HumidityLevel = "70%" },
-                    new Shared.Entities.Inventory { ProductID = 9, BatchID = 5, Quantity = 15, ReceiptDate = DateTime.Parse("2024-02-05").ToUniversalTime(), StorageLocation = "Теплица 1", StorageTemperature = "+18°C", HumidityLevel = "60%" },
-                    new Shared.Entities.Inventory { ProductID = 10, BatchID = 10, Quantity = 25, ReceiptDate = DateTime.Parse("2024-03-01").ToUniversalTime(), StorageLocation = "Теплица 2", StorageTemperature = "+20°C", HumidityLevel = "65%" }
+                    new Shared.Entities.Inventory { ProductID = 1, BatchID = 1, Quantity = 100, ReceiptDate = new DateTime(2024, 01, 15, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Холодильник А1", StorageTemperature = "+2°C", HumidityLevel = "85%" },
+                    new Shared.Entities.Inventory { ProductID = 2, BatchID = 1, Quantity = 80, ReceiptDate = new DateTime(2024, 01, 15, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Холодильник А2", StorageTemperature = "+2°C", HumidityLevel = "85%" },
+                    new Shared.Entities.Inventory { ProductID = 3, BatchID = 2, Quantity = 200, ReceiptDate = new DateTime(2024, 01, 20, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Холодильник Б1", StorageTemperature = "+4°C", HumidityLevel = "80%" },
+                    new Shared.Entities.Inventory { ProductID = 4, BatchID = 2, Quantity = 150, ReceiptDate = new DateTime(2024, 01, 20, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Холодильник Б2", StorageTemperature = "+4°C", HumidityLevel = "80%" },
+                    new Shared.Entities.Inventory { ProductID = 5, BatchID = 4, Quantity = 120, ReceiptDate = new DateTime(2024, 02, 01, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Холодильник В1", StorageTemperature = "+3°C", HumidityLevel = "75%" },
+                    new Shared.Entities.Inventory { ProductID = 6, BatchID = 6, Quantity = 100, ReceiptDate = new DateTime(2024, 02, 10, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Холодильник В2", StorageTemperature = "+3°C", HumidityLevel = "75%" },
+                    new Shared.Entities.Inventory { ProductID = 7, BatchID = 9, Quantity = 90, ReceiptDate = new DateTime(2024, 02, 25, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Холодильник Г1", StorageTemperature = "+5°C", HumidityLevel = "70%" },
+                    new Shared.Entities.Inventory { ProductID = 8, BatchID = 9, Quantity = 80, ReceiptDate = new DateTime(2024, 02, 25, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Холодильник Г2", StorageTemperature = "+5°C", HumidityLevel = "70%" },
+                    new Shared.Entities.Inventory { ProductID = 9, BatchID = 5, Quantity = 15, ReceiptDate = new DateTime(2024, 02, 05, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Теплица 1", StorageTemperature = "+18°C", HumidityLevel = "60%" },
+                    new Shared.Entities.Inventory { ProductID = 10, BatchID = 10, Quantity = 25, ReceiptDate = new DateTime(2024, 03, 01, 0, 0, 0, DateTimeKind.Utc), StorageLocation = "Теплица 2", StorageTemperature = "+20°C", HumidityLevel = "65%" }
                 };
                 context.Inventory.AddRange(inventory);
                 await context.SaveChangesAsync();

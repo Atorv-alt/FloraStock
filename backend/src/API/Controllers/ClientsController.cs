@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Data;
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Shared.Entities;
@@ -11,13 +13,16 @@ namespace API.Controllers
     public class ClientsController : ControllerBase
     {
         private readonly IClientRepository _clientRepository;
+        private readonly AppDbContext _context;
         private readonly ILogger<ClientsController> _logger;
 
         public ClientsController(
             IClientRepository clientRepository,
+            Data.AppDbContext context,
             ILogger<ClientsController> logger)
         {
             _clientRepository = clientRepository;
+            _context = context;
             _logger = logger;
         }
 
@@ -141,7 +146,7 @@ namespace API.Controllers
                 };
 
                 var createdClient = await _clientRepository.CreateAsync(client);
-                return CreatedAtAction(nameof(GetById), new { ID = createdClient.ID }, createdClient);
+                return CreatedAtAction(nameof(GetById), new { id = createdClient.ID }, createdClient);
             }
             catch (Exception ex)
             {
@@ -203,6 +208,10 @@ namespace API.Controllers
                     return NotFound(new { message = "Клиент не найден" });
                 }
 
+                if (await _context.Order.AnyAsync(o => o.ClientID == id))
+                {
+                    return Conflict(new { message = "Нельзя удалить клиента: есть связанные заказы" });
+                }
                 var result = await _clientRepository.DeleteAsync(id);
                 if (!result)
                 {
@@ -210,6 +219,11 @@ namespace API.Controllers
                 }
 
                 return NoContent();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                _logger.LogWarning(dbEx, "Нарушение внешнего ключа при удалении");
+                return Conflict(new { message = "Нельзя удалить клиента: есть связанные заказы" });
             }
             catch (Exception ex)
             {

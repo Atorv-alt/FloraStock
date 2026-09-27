@@ -70,6 +70,10 @@ class CategoriesWidget(QWidget):
 
     def refresh_data(self):
         try:
+            if not self.api_service.token:
+                self.categories = []
+                self.apply_filter()
+                return
             data = self.api_service.get_categories()
             self.categories = data if isinstance(data, list) else []
         except Exception as e:
@@ -124,7 +128,8 @@ class CategoryEditDialog(QDialog):
             QMessageBox.warning(self, "Ошибка", "Введите название категории")
             return
         try:
-            from src.utils.validation import require_unique
+            from src.utils.validation import require_name, require_unique
+            require_name(name, "Наименование категории")
             require_unique(name, self.existing_names, "Наименование категории")
         except Exception as e:
             QMessageBox.warning(self, "Ошибка", str(e))

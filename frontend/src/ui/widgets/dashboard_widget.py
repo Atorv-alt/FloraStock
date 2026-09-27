@@ -255,8 +255,12 @@ class ReportsDialog(QDialog):
             data = []
             
             for order in orders:
-                client = order.get('client', {})
-                client_name = client.get('fullName', '') if isinstance(client, dict) else str(client)
+                client_name = order.get('clientName') or ''
+                if not client_name:
+                    client = order.get('client', {})
+                    client_name = client.get('fullName', '') if isinstance(client, dict) else str(client)
+                if not client_name and order.get('clientId') is not None:
+                    client_name = f"ID {order.get('clientId')}"
                 
                 date = order.get('orderDate', '')
                 if date:
@@ -266,11 +270,15 @@ class ReportsDialog(QDialog):
                     except:
                         pass
                 
+                try:
+                    exp_amount = float(order.get('totalAmount') or 0)
+                except (TypeError, ValueError):
+                    exp_amount = 0.0
                 data.append({
                     "Номер заказа": order.get('orderNumber', ''),
                     "Клиент": client_name,
                     "Дата": str(date),
-                    "Сумма": f"{order.get('totalAmount', 0):.2f}",
+                    "Сумма": f"{exp_amount:.2f}",
                     "Статус": order.get('status', '')
                 })
             
@@ -320,8 +328,12 @@ class ReportsDialog(QDialog):
             for i, order in enumerate(orders[:100]):
                 self.orders_table.setItem(i, 0, QTableWidgetItem(str(order.get('orderNumber', ''))))
                 
-                client = order.get('client', {})
-                client_name = client.get('fullName', 'Неизвестен') if isinstance(client, dict) else str(client)
+                client_name = order.get('clientName') or ''
+                if not client_name:
+                    client = order.get('client', {})
+                    client_name = client.get('fullName', '') if isinstance(client, dict) else str(client)
+                if not client_name:
+                    client_name = f"ID {order.get('clientId')}" if order.get('clientId') is not None else 'Неизвестен'
                 self.orders_table.setItem(i, 1, QTableWidgetItem(client_name))
                 
                 date = order.get('orderDate', '')
@@ -333,7 +345,10 @@ class ReportsDialog(QDialog):
                         pass
                 self.orders_table.setItem(i, 2, QTableWidgetItem(str(date)))
                 
-                amount = order.get('totalAmount', 0)
+                try:
+                    amount = float(order.get('totalAmount') or 0)
+                except (TypeError, ValueError):
+                    amount = 0.0
                 total += amount
                 self.orders_table.setItem(i, 3, QTableWidgetItem(f"₽{amount:,.2f}"))
                 
@@ -346,7 +361,7 @@ class ReportsDialog(QDialog):
             self.orders_stats.setHtml(f"""
 <b>Всего заказов:</b> {len(orders)}<br>
 <b>Общая сумма:</b> ₽{total:,.2f}<br>
-<b>Средний чек:</b> ₽{total/len(orders):,.2f}<br>
+<b>Средний чек:</b> ₽{(total/len(orders) if orders else 0):,.2f}<br>
 <br><b>По статусам:</b><br>{status_text}
             """)
         except Exception as e:
@@ -569,10 +584,10 @@ class ReportsDialog(QDialog):
             orders = self.api_service.get_orders()
             inventory_value = self.api_service.get_inventory_value()
             
-            total_revenue = sum(o.get('totalAmount', 0) for o in orders)
+            total_revenue = sum(float(o.get('totalAmount') or 0) for o in orders)
             completed = sum(1 for o in orders if o.get('status') in ['Выполнен', 'Доставлен'])
             in_progress = sum(1 for o in orders if o.get('status') == 'В обработке')
-            
+
             data = [
                 {"Показатель": "Общая выручка", "Значение": f"₽{total_revenue:,.2f}"},
                 {"Показатель": "Средний чек", "Значение": f"₽{total_revenue/len(orders):,.2f}" if orders else "₽0"},
@@ -622,8 +637,8 @@ class ReportsDialog(QDialog):
             orders = self.api_service.get_orders()
             inventory_value = self.api_service.get_inventory_value()
             
-            total_revenue = sum(o.get('totalAmount', 0) for o in orders)
-            
+            total_revenue = sum(float(o.get('totalAmount') or 0) for o in orders)
+
             completed = sum(1 for o in orders if o.get('status') in ['Выполнен', 'Доставлен'])
             in_progress = sum(1 for o in orders if o.get('status') == 'В обработке')
             

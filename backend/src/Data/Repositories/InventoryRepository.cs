@@ -25,7 +25,7 @@ namespace Data.Repositories
         public async Task<IEnumerable<Inventory>> GetByProductAsync(int productId)
         {
             return await _context.Inventory
-                .Where(i => i.ProductId == productId)
+                .Where(i => i.ProductID == productId)
                 .OrderByDescending(i => i.ReceiptDate)
                 .ToListAsync();
         }
@@ -33,7 +33,7 @@ namespace Data.Repositories
         public async Task<IEnumerable<Inventory>> GetByBatchAsync(int batchId)
         {
             return await _context.Inventory
-                .Where(i => i.BatchId == batchId)
+                .Where(i => i.BatchID == batchId)
                 .OrderBy(i => i.StorageLocation)
                 .ToListAsync();
         }
@@ -49,13 +49,13 @@ namespace Data.Repositories
 
         public async Task<IEnumerable<Inventory>> GetExpiringSoonAsync(int daysThreshold)
         {
-            var expirationDate = DateTime.Today.AddDays(daysThreshold);
-            
+            var expirationDate = DateTime.SpecifyKind(DateTime.Today.AddDays(daysThreshold), DateTimeKind.Utc);
+
             return await _context.Inventory
-                .Where(i => 
-                           i.ReceiptDate.HasValue && 
+                .Where(i =>
+                           i.ReceiptDate.HasValue &&
                            i.ReceiptDate.Value <= expirationDate)
-                .OrderBy(i => i.ReceiptDate ?? DateTime.MinValue)
+                .OrderBy(i => i.ReceiptDate ?? new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc))
                 .ThenBy(i => i.StorageLocation)
                 .ToListAsync();
         }
@@ -99,7 +99,7 @@ namespace Data.Repositories
         public async Task<int> GetTotalQuantityAsync(int productId)
         {
             return await _context.Inventory
-                .Where(i => i.ProductId == productId)
+                .Where(i => i.ProductID == productId)
                 .SumAsync(i => i.Quantity);
         }
 
@@ -108,7 +108,7 @@ namespace Data.Repositories
             return await _context.Inventory
                 .Where(i => i.Quantity > 0)
                 .Join(_context.Product,
-                    inv => inv.ProductId,
+                    inv => inv.ProductID,
                     prod => prod.ID,
                     (inv, prod) => new { inv.Quantity, prod.RetailPrice })
                 .SumAsync(x => x.Quantity * (x.RetailPrice ?? 0m));

@@ -24,7 +24,7 @@ namespace Data.Repositories
         public async Task<IEnumerable<Product>> GetByCategoryAsync(int categoryId)
         {
             return await _context.Product
-                .Where(p => p.CategoryId == categoryId)
+                .Where(p => p.CategoryID == categoryId)
                 .OrderBy(p => p.Name)
                 .ToListAsync();
         }
@@ -94,7 +94,7 @@ namespace Data.Repositories
                 foreach (var item in inventory)
                 {
                     var product = await _context.Product
-                        .FirstOrDefaultAsync(p => p.ID == item.ProductId);
+                        .FirstOrDefaultAsync(p => p.ID == item.ProductID);
                     if (product != null)
                     {
                         totalValue += item.Quantity * (product.RetailPrice ?? 0m);
@@ -112,7 +112,7 @@ namespace Data.Repositories
         {
             var lowStockProductIds = await _context.Inventory
                 .Where(i => i.Quantity <= threshold)
-                .Select(i => i.ProductId)
+                .Select(i => i.ProductID)
                 .Distinct()
                 .ToListAsync();
 

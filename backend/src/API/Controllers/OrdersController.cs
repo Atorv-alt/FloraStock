@@ -119,7 +119,7 @@ namespace API.Controllers
         {
             try
             {
-                var orders = await _orderRepository.GetByDateRangeAsync(startDate, endDate);
+                var orders = await _orderRepository.GetByDateRangeAsync(NormalizeToUtc(startDate), NormalizeToUtc(endDate));
                 return Ok(orders);
             }
             catch (Exception ex)
@@ -158,7 +158,7 @@ namespace API.Controllers
                     ClientId = request.ClientId,
                     EmployeeId = request.EmployeeId,
                     OrderNumber = request.OrderNumber,
-                    OrderDate = request.OrderDate?.Date ?? DateTime.Today,
+                    OrderDate = NormalizeToUtc(request.OrderDate?.Date) ?? DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc),
                     Status = request.Status ?? "Новый",
                     TotalAmount = request.TotalAmount
                 };
@@ -204,7 +204,7 @@ namespace API.Controllers
                 existingOrder.ClientId = request.ClientId;
                 existingOrder.EmployeeId = request.EmployeeId;
                 existingOrder.OrderNumber = request.OrderNumber ?? existingOrder.OrderNumber;
-                existingOrder.OrderDate = request.OrderDate?.Date ?? existingOrder.OrderDate;
+                existingOrder.OrderDate = NormalizeToUtc(request.OrderDate?.Date) ?? NormalizeToUtc(existingOrder.OrderDate);
                 existingOrder.Status = request.Status ?? existingOrder.Status;
                 existingOrder.TotalAmount = request.TotalAmount ?? existingOrder.TotalAmount;
 
@@ -248,7 +248,7 @@ namespace API.Controllers
         {
             try
             {
-                var revenue = await _orderRepository.GetTotalRevenueAsync(startDate, endDate);
+                var revenue = await _orderRepository.GetTotalRevenueAsync(NormalizeToUtc(startDate), NormalizeToUtc(endDate));
                 return Ok(revenue);
             }
             catch (Exception ex)
@@ -263,7 +263,7 @@ namespace API.Controllers
         {
             try
             {
-                var count = await _orderRepository.GetTotalOrdersAsync(startDate, endDate);
+                var count = await _orderRepository.GetTotalOrdersAsync(NormalizeToUtc(startDate), NormalizeToUtc(endDate));
                 return Ok(count);
             }
             catch (Exception ex)
@@ -271,6 +271,22 @@ namespace API.Controllers
                 _logger.LogError(ex, "Ошибка при подсчете заказов");
                 return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
             }
+        }
+
+        private static DateTime NormalizeToUtc(DateTime value)
+        {
+            return value.Kind switch
+            {
+                DateTimeKind.Utc => value,
+                DateTimeKind.Local => value.ToUniversalTime(),
+                // Дата без зоны (напр. "2026-09-27" из календаря) — это локальная дата
+                _ => DateTime.SpecifyKind(value, DateTimeKind.Local).ToUniversalTime(),
+            };
+        }
+
+        private static DateTime? NormalizeToUtc(DateTime? value)
+        {
+            return value.HasValue ? NormalizeToUtc(value.Value) : null;
         }
 
         private async Task<string> GenerateOrderNumberAsync()

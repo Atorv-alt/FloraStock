@@ -265,7 +265,7 @@ class InventoryWidget(QWidget):
             batch_info = self.get_batch_info(item.get('batchId'))
             self.inventory_table.setItem(row, 2, QTableWidgetItem(batch_info))
             
-            quantity = item.get('quantity', 0)
+            quantity = item.get('quantity', 0) or 0
             qty_item = QTableWidgetItem(str(quantity))
             if quantity <= 10:
                 qty_item.setForeground(QBrush(QColor("#f44336")))
@@ -311,7 +311,14 @@ class InventoryWidget(QWidget):
     def edit_inventory(self, index):
         """Редактировать запись"""
         row = index.row()
-        item_id = int(self.inventory_table.item(row, 0).text())
+        _cell = self.inventory_table.item(row, 0)
+        try:
+            item_id = int(_cell.text()) if _cell is not None else -1
+        except (TypeError, ValueError):
+            item_id = -1
+        if item_id < 0:
+            QMessageBox.warning(self, "Ошибка", "Не удалось получить ID записи")
+            return
         item = next((i for i in self.inventory if i.get('id') == item_id), None)
         if item:
             dialog = InventoryDialog(self.api_service, self.products, self.batches, self, item)

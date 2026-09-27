@@ -67,7 +67,7 @@ class Config:
                         if '=' in line and not line.startswith('#'):
                             key, value = line.split('=', 1)
                             self._settings[key.strip()] = value.strip()
-            except:
+            except Exception:
                 pass
     
     def _get_config(self, key: str, default: str) -> str:

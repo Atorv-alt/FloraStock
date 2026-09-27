@@ -279,8 +279,12 @@ class ReportsWidget(QWidget):
             for i, order in enumerate(orders[:100]):
                 self.orders_table.setItem(i, 0, QTableWidgetItem(str(order.get('orderNumber', ''))))
                 
-                client = order.get('client', {})
-                client_name = client.get('fullName', 'Неизвестен') if isinstance(client, dict) else str(client)
+                client_name = order.get('clientName') or ''
+                if not client_name:
+                    client = order.get('client', {})
+                    client_name = client.get('fullName', '') if isinstance(client, dict) else str(client)
+                if not client_name:
+                    client_name = f"ID {order.get('clientId')}" if order.get('clientId') is not None else 'Неизвестен'
                 self.orders_table.setItem(i, 1, QTableWidgetItem(client_name))
                 
                 date = order.get('orderDate', '')
@@ -320,8 +324,12 @@ class ReportsWidget(QWidget):
             data = []
             
             for order in orders:
-                client = order.get('client', {})
-                client_name = client.get('fullName', '') if isinstance(client, dict) else str(client)
+                client_name = order.get('clientName') or ''
+                if not client_name:
+                    client = order.get('client', {})
+                    client_name = client.get('fullName', '') if isinstance(client, dict) else str(client)
+                if not client_name and order.get('clientId') is not None:
+                    client_name = f"ID {order.get('clientId')}"
                 
                 date = order.get('orderDate', '')
                 if date:
@@ -432,7 +440,7 @@ class ReportsWidget(QWidget):
                 product_name = product_map.get(item.get('productId'), 'Неизвестен')
                 self.inventory_table.setItem(i, 1, QTableWidgetItem(product_name))
                 
-                quantity = item.get('quantity', 0)
+                quantity = item.get('quantity', 0) or 0
                 qty_item = QTableWidgetItem(str(quantity))
                 if quantity <= 10:
                     low_stock += 1
@@ -646,6 +654,8 @@ class ReportsWidget(QWidget):
 
     def refresh_all(self):
         """Обновить все отчеты"""
+        if not self.api_service.token:
+            return
         self.load_overview()
         self.load_orders_report()
         self.load_inventory_report()

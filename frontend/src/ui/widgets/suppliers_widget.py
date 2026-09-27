@@ -266,7 +266,14 @@ class SuppliersWidget(QWidget):
     def edit_supplier(self, index):
         """Редактировать поставщика"""
         row = index.row()
-        supplier_id = int(self.suppliers_table.item(row, 0).text())
+        _cell = self.suppliers_table.item(row, 0)
+        try:
+            supplier_id = int(_cell.text()) if _cell is not None else -1
+        except (TypeError, ValueError):
+            supplier_id = -1
+        if supplier_id < 0:
+            QMessageBox.warning(self, "Ошибка", "Не удалось получить ID записи")
+            return
         self.edit_supplier_by_id(supplier_id)
     
     def edit_supplier_by_id(self, supplier_id):

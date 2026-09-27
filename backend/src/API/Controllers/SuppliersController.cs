@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Data;
 using Microsoft.AspNetCore.Authorization;
 using Data.Repositories;
 using Shared.Entities;
@@ -12,13 +14,16 @@ namespace API.Controllers
     public class SuppliersController : ControllerBase
     {
         private readonly ISupplierRepository _supplierRepository;
+        private readonly AppDbContext _context;
         private readonly ILogger<SuppliersController> _logger;
 
         public SuppliersController(
             ISupplierRepository supplierRepository,
+            Data.AppDbContext context,
             ILogger<SuppliersController> logger)
         {
             _supplierRepository = supplierRepository;
+            _context = context;
             _logger = logger;
         }
 
@@ -68,7 +73,7 @@ namespace API.Controllers
 
                 if (await _supplierRepository.NameExistsAsync(supplier.Name))
                 {
-                    return BadRequest(new { message = "Поставщик с таким названием уже существует" });
+                    return Conflict(new { message = "Поставщик с таким названием уже существует" });
                 }
 
                 var created = await _supplierRepository.CreateAsync(supplier);
@@ -99,7 +104,7 @@ namespace API.Controllers
 
                 if (await _supplierRepository.NameExistsAsync(supplier.Name, id))
                 {
-                    return BadRequest(new { message = "Поставщик с таким названием уже существует" });
+                    return Conflict(new { message = "Поставщик с таким названием уже существует" });
                 }
 
                 existing.Name = supplier.Name;
@@ -123,12 +128,21 @@ namespace API.Controllers
         {
             try
             {
+                if (await _context.Batch.AnyAsync(b => b.SupplierID == id))
+                {
+                    return Conflict(new { message = "Нельзя удалить поставщика: есть связанные партии поставок" });
+                }
                 var deleted = await _supplierRepository.DeleteAsync(id);
                 if (!deleted)
                 {
                     return NotFound(new { message = "Поставщик не найден" });
                 }
                 return NoContent();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                _logger.LogWarning(dbEx, "Нарушение внешнего ключа при удалении");
+                return Conflict(new { message = "Нельзя удалить поставщика: есть связанные партии поставок" });
             }
             catch (Exception ex)
             {

@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Data;
 using Microsoft.AspNetCore.Authorization;
 using Data.Repositories;
 using Shared.Entities;
@@ -13,13 +15,16 @@ namespace API.Controllers
     public class BatchesController : ControllerBase
     {
         private readonly IBatchRepository _batchRepository;
+        private readonly AppDbContext _context;
         private readonly ILogger<BatchesController> _logger;
 
         public BatchesController(
             IBatchRepository batchRepository,
+            Data.AppDbContext context,
             ILogger<BatchesController> logger)
         {
             _batchRepository = batchRepository;
+            _context = context;
             _logger = logger;
         }
 
@@ -75,7 +80,7 @@ namespace API.Controllers
                 var batch = new Batch
                 {
                     SupplierID = request.SupplierId,
-                    DeliveryDate = request.DeliveryDate,
+                    DeliveryDate = NormalizeToUtc(request.DeliveryDate),
                     InvoiceNumber = request.InvoiceNumber,
                     Quantity = request.Quantity,
                     CostPrice = request.CostPrice
@@ -113,7 +118,7 @@ namespace API.Controllers
                 }
 
                 existingBatch.SupplierID = request.SupplierId;
-                existingBatch.DeliveryDate = request.DeliveryDate;
+                existingBatch.DeliveryDate = NormalizeToUtc(request.DeliveryDate);
                 existingBatch.InvoiceNumber = request.InvoiceNumber;
                 existingBatch.Quantity = request.Quantity;
                 existingBatch.CostPrice = request.CostPrice;
@@ -128,6 +133,20 @@ namespace API.Controllers
             }
         }
 
+        private static DateTime? NormalizeToUtc(DateTime? value)
+        {
+            if (!value.HasValue)
+                return null;
+            var dt = value.Value;
+            return dt.Kind switch
+            {
+                DateTimeKind.Utc => dt,
+                DateTimeKind.Local => dt.ToUniversalTime(),
+                // Дата без зоны (напр. "2026-09-27" из календаря) — это локальная дата
+                _ => DateTime.SpecifyKind(dt, DateTimeKind.Local).ToUniversalTime(),
+            };
+        }
+
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {
@@ -138,6 +157,11 @@ namespace API.Controllers
                     return NotFound(new { message = "Партия не найдена" });
                 }
 
+                if (await _context.Inventory.AnyAsync(i => i.BatchID == id)
+                    || await _context.StockPosition.AnyAsync(s => s.BatchID == id))
+                {
+                    return Conflict(new { message = "Нельзя удалить партию: есть связанные складские позиции" });
+                }
                 var result = await _batchRepository.DeleteAsync(id);
                 if (!result)
                 {
@@ -145,6 +169,11 @@ namespace API.Controllers
                 }
 
                 return NoContent();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                _logger.LogWarning(dbEx, "Нарушение внешнего ключа при удалении");
+                return Conflict(new { message = "Нельзя удалить партию: есть связанные складские позиции" });
             }
             catch (Exception ex)
             {

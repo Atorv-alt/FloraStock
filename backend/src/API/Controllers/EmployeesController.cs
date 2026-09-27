@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Data;
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Shared.Entities;
@@ -11,13 +13,16 @@ namespace API.Controllers
     public class EmployeesController : ControllerBase
     {
         private readonly IEmployeeRepository _employeeRepository;
+        private readonly AppDbContext _context;
         private readonly ILogger<EmployeesController> _logger;
 
         public EmployeesController(
             IEmployeeRepository employeeRepository,
+            Data.AppDbContext context,
             ILogger<EmployeesController> logger)
         {
             _employeeRepository = employeeRepository;
+            _context = context;
             _logger = logger;
         }
 
@@ -160,8 +165,21 @@ namespace API.Controllers
         {
             try
             {
-                await _employeeRepository.DeleteAsync(id);
+                if (await _context.Order.AnyAsync(o => o.EmployeeID == id))
+                {
+                    return Conflict(new { message = "Нельзя удалить сотрудника: есть связанные заказы" });
+                }
+                var deleted = await _employeeRepository.DeleteAsync(id);
+                if (!deleted)
+                {
+                    return NotFound(new { message = "Сотрудник не найден" });
+                }
                 return NoContent();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                _logger.LogWarning(dbEx, "Нарушение внешнего ключа при удалении");
+                return Conflict(new { message = "Нельзя удалить сотрудника: есть связанные заказы" });
             }
             catch (Exception ex)
             {

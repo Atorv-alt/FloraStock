@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Data;
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Shared.Entities;
@@ -11,13 +13,16 @@ namespace API.Controllers
     public class CategoriesController : ControllerBase
     {
         private readonly ICategoryRepository _categoryRepository;
+        private readonly AppDbContext _context;
         private readonly ILogger<CategoriesController> _logger;
 
         public CategoriesController(
             ICategoryRepository categoryRepository,
+            Data.AppDbContext context,
             ILogger<CategoriesController> logger)
         {
             _categoryRepository = categoryRepository;
+            _context = context;
             _logger = logger;
         }
 
@@ -131,6 +136,10 @@ namespace API.Controllers
                     return NotFound(new { message = "Категория не найдена" });
                 }
 
+                if (await _context.Product.AnyAsync(p => p.CategoryID == id))
+                {
+                    return Conflict(new { message = "Нельзя удалить категорию: есть связанные товары" });
+                }
                 var result = await _categoryRepository.DeleteAsync(id);
                 if (!result)
                 {
@@ -138,6 +147,11 @@ namespace API.Controllers
                 }
 
                 return NoContent();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                _logger.LogWarning(dbEx, "Нарушение внешнего ключа при удалении");
+                return Conflict(new { message = "Нельзя удалить категорию: есть связанные товары" });
             }
             catch (Exception ex)
             {

@@ -295,7 +295,14 @@ class EmployeesWidget(QWidget):
     def edit_employee(self, index):
         """Редактировать сотрудника"""
         row = index.row()
-        emp_id = int(self.employees_table.item(row, 0).text())
+        _cell = self.employees_table.item(row, 0)
+        try:
+            emp_id = int(_cell.text()) if _cell is not None else -1
+        except (TypeError, ValueError):
+            emp_id = -1
+        if emp_id < 0:
+            QMessageBox.warning(self, "Ошибка", "Не удалось получить ID записи")
+            return
         self.edit_employee_by_id(emp_id)
     
     def edit_employee_by_id(self, emp_id):
@@ -461,7 +468,7 @@ class EmployeeDialog(QDialog):
             self.password_input.setStyleSheet(self.password_input.styleSheet() + "background-color: #ffe6e6;")
 
         from src.utils.validation import (
-            require_access_level, require_email, require_non_empty_password,
+            require_access_level, require_email, require_password,
             require_person_name, require_phone,
         )
         if full_name:
@@ -472,7 +479,7 @@ class EmployeeDialog(QDialog):
                 self.full_name_input.setStyleSheet(self.full_name_input.styleSheet() + "background-color: #ffe6e6;")
         if password:
             try:
-                require_non_empty_password(password)
+                require_password(password)
             except Exception as e:
                 errors.append(f"❌ {e}")
                 self.password_input.setStyleSheet(self.password_input.styleSheet() + "background-color: #ffe6e6;")

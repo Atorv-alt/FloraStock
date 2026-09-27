@@ -42,7 +42,7 @@ class Inventory:
         
         receipt_date = None
         if data.get('receiptDate'):
-            receipt_date = datetime.fromisoformat(data['receiptDate']).date()
+            receipt_date = datetime.fromisoformat(str(data['receiptDate']).replace('Z', '+00:00')).date()
         
         product = None
         if data.get('product'):

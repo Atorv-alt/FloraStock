@@ -316,11 +316,14 @@ class BatchesWidget(QWidget):
                     pass
             self.batches_table.setItem(row, 3, QTableWidgetItem(str(delivery_date)))
             
-            quantity = batch.get('quantity', 0)
+            quantity = batch.get('quantity', 0) or 0
             qty_item = QTableWidgetItem(str(quantity))
             self.batches_table.setItem(row, 4, qty_item)
             
-            cost = batch.get('costPrice', 0)
+            try:
+                cost = float(batch.get('costPrice') or 0)
+            except (TypeError, ValueError):
+                cost = 0.0
             cost_text = f"₽{cost:,.2f}"
             self.batches_table.setItem(row, 5, QTableWidgetItem(cost_text))
             
@@ -357,7 +360,14 @@ class BatchesWidget(QWidget):
     def edit_batch(self, index):
         """Редактировать партию"""
         row = index.row()
-        batch_id = int(self.batches_table.item(row, 0).text())
+        _cell = self.batches_table.item(row, 0)
+        try:
+            batch_id = int(_cell.text()) if _cell is not None else -1
+        except (TypeError, ValueError):
+            batch_id = -1
+        if batch_id < 0:
+            QMessageBox.warning(self, "Ошибка", "Не удалось получить ID записи")
+            return
         batch = next((b for b in self.batches if b.get('id') == batch_id), None)
         if batch:
             self.edit_batch_by_object(batch)
@@ -519,15 +529,16 @@ class BatchDialog(QDialog):
             else:
                 quantity = int(qty_text)
 
-        cost = 0
+        from src.utils.validation import require_positive_price
+        cost = None
         cost_text = self.cost_input.text().strip()
         if cost_text:
-            err = _check_decimal(cost_text, "Стоимость", min_val=0)
-            if err:
-                errors.append(err)
-                self.cost_input.setStyleSheet(self.cost_input.styleSheet() + "background-color: #ffe6e6;")
-            else:
+            try:
+                require_positive_price(cost_text, "Стоимость")
                 cost = float(cost_text)
+            except Exception as e:
+                errors.append(f"❌ {e}")
+                self.cost_input.setStyleSheet(self.cost_input.styleSheet() + "background-color: #ffe6e6;")
 
         if errors:
             QMessageBox.warning(self, "Ошибка валидации", "\n".join(errors))

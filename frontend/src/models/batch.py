@@ -38,7 +38,7 @@ class Batch:
         
         delivery_date = None
         if data.get('deliveryDate'):
-            delivery_date = datetime.fromisoformat(data['deliveryDate']).date()
+            delivery_date = datetime.fromisoformat(str(data['deliveryDate']).replace('Z', '+00:00')).date()
         
         supplier = None
         if data.get('supplier'):

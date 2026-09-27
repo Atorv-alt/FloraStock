@@ -418,7 +418,14 @@ class ProductsWidget(QWidget):
     def edit_product(self, index):
         """Редактировать товар по индексу таблицы"""
         row = index.row()
-        product_id = int(self.products_table.item(row, 0).text())
+        _cell = self.products_table.item(row, 0)
+        try:
+            product_id = int(_cell.text()) if _cell is not None else -1
+        except (TypeError, ValueError):
+            product_id = -1
+        if product_id < 0:
+            QMessageBox.warning(self, "Ошибка", "Не удалось получить ID записи")
+            return
         self.edit_product_by_id(product_id)
     
     def edit_product_by_id(self, product_id):
@@ -613,15 +620,16 @@ class ProductDialog(QDialog):
             else:
                 retail_price = float(retail_price_text)
 
+        from src.utils.validation import require_positive_price
         purchase_price = None
         pp_text = self.purchase_price_input.text().strip()
         if pp_text:
-            err = _check_decimal(pp_text, "Закупочная цена", min_val=0)
-            if err:
-                errors.append(err)
-                self.purchase_price_input.setStyleSheet(self.purchase_price_input.styleSheet() + "background-color: #ffe6e6;")
-            else:
+            try:
+                require_positive_price(pp_text, "Закупочная цена")
                 purchase_price = float(pp_text)
+            except Exception as e:
+                errors.append(f"❌ {e}")
+                self.purchase_price_input.setStyleSheet(self.purchase_price_input.styleSheet() + "background-color: #ffe6e6;")
 
         shelf_life = None
         sl_text = self.shelf_life_input.text().strip()
@@ -669,7 +677,7 @@ class ProductDialog(QDialog):
                 'name': name,
                 'description': self.description_input.text().strip() or None,
                 'categoryId': self.category_combo.currentData(),
-                'purchasePrice': purchase_price or 0,
+                'purchasePrice': purchase_price,
                 'retailPrice': retail_price,
                 'unit': self.unit_input.text().strip() or "шт",
                 'shelfLifeDays': shelf_life or 7,

@@ -23,7 +23,13 @@ def _to_jsonable(value):
     if isinstance(value, dict):
         return {k: _to_jsonable(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
-        return [_to_jsonable(v) for v in value]
+            return [_to_jsonable(v) for v in value]
+    to_py_date = getattr(value, 'toPyDate', None)
+    if callable(to_py_date):
+        try:
+            return to_py_date().isoformat()
+        except Exception:
+            return str(value)
     return value
 
 
@@ -88,16 +94,20 @@ class ApiService:
             
         except RequestException as e:
             self.logger.error(f"Ошибка при запросе к {url}: {e}")
-            if e.response and e.response.content:
+            if e.response is not None and e.response.content:
                 try:
                     error_data = e.response.json()
                     message = error_data.get('message', f'HTTP {e.response.status_code}')
-                except json.JSONDecodeError:
-                    message = f'HTTP {e.response.status_code}'
+                except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+                    try:
+                        raw = e.response.content.decode('utf-8', errors='replace')
+                    except Exception:
+                        raw = ''
+                    message = f'HTTP {e.response.status_code}: {raw[:200]}' if raw else f'HTTP {e.response.status_code}'
                 raise Exception(message)
             raise Exception(f"Ошибка запроса: {e}")
-            
-        except json.JSONDecodeError:
+
+        except (json.JSONDecodeError, UnicodeDecodeError):
             self.logger.error(f"Ошибка декодирования JSON из ответа {url}")
             raise Exception("Неверный формат ответа от сервера")
     
@@ -109,6 +119,8 @@ class ApiService:
             'password': password
         }
         response = self._make_request('POST', '/auth/login', json=data)
+        if not isinstance(response, dict) or not response.get('token'):
+            raise Exception("Неверный ответ сервера при входе")
         self.set_token(response['token'])
         return response
     
@@ -206,7 +218,10 @@ class ApiService:
     def get_inventory_value(self) -> float:
         """Получение стоимости склада"""
         response = self._make_request('GET', '/products/inventory-value')
-        return float(response) if response else 0.0
+        try:
+            return float(response)
+        except (TypeError, ValueError):
+            return 0.0
     
     # Методы работы с клиентами
     def get_clients(self) -> List[Dict[str, Any]]:
@@ -329,7 +344,10 @@ class ApiService:
             params['endDate'] = end_date.isoformat()
         
         response = self._make_request('GET', '/orders/revenue', params=params)
-        return float(response) if response else 0.0
+        try:
+            return float(response)
+        except (TypeError, ValueError):
+            return 0.0
     
     # Методы работы со складом
     def get_inventory(self) -> List[Dict[str, Any]]:
@@ -399,7 +417,10 @@ class ApiService:
     def get_total_inventory_value(self) -> float:
         """Получение общей стоимости склада"""
         response = self._make_request('GET', '/inventory/total-value')
-        return float(response) if response else 0.0
+        try:
+            return float(response)
+        except (TypeError, ValueError):
+            return 0.0
     
     # Методы работы с поставщиками
     def get_suppliers(self) -> List[Dict[str, Any]]:
